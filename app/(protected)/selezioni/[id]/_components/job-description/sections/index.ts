@@ -1,0 +1,13 @@
+export { DatiAnagraficiSection } from "./DatiAnagraficiSection";
+export { StudioInfoSection } from "./StudioInfoSection";
+export { StrutturaSection } from "./StrutturaSection";
+export { ServiziSection } from "./ServiziSection";
+export { DigitalizzazioneSection } from "./DigitalizzazioneSection";
+export { SwotSection } from "./SwotSection";
+export { AttivitaSection } from "./AttivitaSection";
+export { CompetenzeHardSection } from "./CompetenzeHardSection";
+export { ConoscenzeTecnicheSection } from "./ConoscenzeTecnicheSection";
+export { SoftSkillsSection } from "./SoftSkillsSection";
+export { FormazioneSection } from "./FormazioneSection";
+export { OffertaSection } from "./OffertaSection";
+export { ChiusuraSection } from "./ChiusuraSection";
