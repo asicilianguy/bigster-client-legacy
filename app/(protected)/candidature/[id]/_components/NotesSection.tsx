@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useUpdateApplicationMutation } from "@/lib/redux/features/applications/applicationsApiSlice";
 import { Spinner } from "@/components/ui/spinner";
 import { StickyNote, Save, X, Edit3 } from "lucide-react";
+import { useUserRole } from "@/hooks/use-user-role";
 
 interface NotesSectionProps {
     applicationId: number;
@@ -17,6 +18,7 @@ export function NotesSection({
     notes,
     onRefetch,
 }: NotesSectionProps) {
+    const { isConsulente } = useUserRole();
     const [isEditing, setIsEditing] = useState(false);
     const [editedNotes, setEditedNotes] = useState(notes || "");
 
@@ -51,7 +53,7 @@ export function NotesSection({
                     Note Interne
                 </h2>
 
-                {!isEditing && (
+                {!isEditing && !isConsulente && (
                     <Button
                         onClick={() => setIsEditing(true)}
                         variant="outline"
@@ -65,7 +67,7 @@ export function NotesSection({
             </div>
 
             <div className="p-6">
-                {isEditing ? (
+                {isEditing && !isConsulente ? (
                     <div className="space-y-4">
                         <textarea
                             value={editedNotes}
@@ -106,8 +108,9 @@ export function NotesSection({
                     </div>
                 ) : (
                     <p className="text-sm text-bigster-text-muted italic">
-                        Nessuna nota inserita. Clicca "Modifica" per aggiungere note interne
-                        sulla candidatura.
+                        {isConsulente
+                            ? "Nessuna nota interna."
+                            : 'Nessuna nota inserita. Clicca "Modifica" per aggiungere note interne sulla candidatura.'}
                     </p>
                 )}
             </div>

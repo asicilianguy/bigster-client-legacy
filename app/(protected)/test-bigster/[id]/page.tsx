@@ -14,7 +14,6 @@ import {
     AtteggiamentoChart,
     CapacitaChart,
     ValiditaChart,
-    ScoreDetailBars,
     ActionsCard,
     ProgressCard,
     ProfileCard,
@@ -116,26 +115,16 @@ export default function TestDetailPage() {
                 <KPICards test={test} />
 
                 {test.completed && test.scores && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
+                    <div className="space-y-6">
                         <AtteggiamentoChart scores={test.scores} />
-
                         <CapacitaChart scores={test.scores} />
-
                         <ValiditaChart scores={test.scores} />
-
-                        <ScoreDetailBars scores={test.scores} type="atteggiamento" />
-
-                        <ScoreDetailBars scores={test.scores} type="capacita" />
                     </div>
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
                     <ActionsCard test={test} />
-
                     <ProgressCard test={test} />
-
                     {test.profile && <ProfileCard profile={test.profile} />}
                 </div>
 

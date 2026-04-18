@@ -3,11 +3,12 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
-import { X, ChevronDown } from "lucide-react";
+import { X, ChevronDown, Lock } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { StandardSelect } from "@/components/ui/StandardSelect";
 import { BigsterTestStatus } from "@/types/bigster";
 import { AttestatoAsoStatus, InterviewType, InterviewOutcome } from "@/types/application";
+import { useUserRole } from "@/hooks/use-user-role";
 
 const inputBase =
     "w-full rounded-none bg-bigster-surface border border-bigster-border text-bigster-text placeholder:text-bigster-text-muted focus:outline-none focus:ring-0 focus:border-bigster-text px-4 py-2 text-sm transition-colors appearance-none";
@@ -61,13 +62,11 @@ const INTERVIEW_OUTCOME_OPTIONS = [
 ];
 
 export interface FilterState {
-
     stato: string;
     selezione_id: string;
     company_id: string;
     is_shortlisted: string;
     is_read: string;
-
     sesso: string;
     regione: string;
     provincia: string;
@@ -75,11 +74,9 @@ export interface FilterState {
     titolo_studio: string;
     eta_min: string;
     eta_max: string;
-
     domicilio_regione: string;
     domicilio_provincia: string;
     domicilio_citta: string;
-
     automunito: string;
     disponibilita_trasferte: string;
     partita_iva: string;
@@ -87,15 +84,12 @@ export interface FilterState {
     disponibilita_immediata: string;
     preavviso_min: string;
     preavviso_max: string;
-
     has_cv: string;
     has_note: string;
-
     has_colloqui: string;
     tipo_colloquio: string;
     esito_colloquio: string;
     has_colloqui_positivi: string;
-
     has_test: string;
     test_status: string;
     test_completed: string;
@@ -106,12 +100,9 @@ export interface FilterState {
     test_read: string;
     test_evaluation: string;
     test_profile_id: string;
-
     piattaforma: string;
-
     data_da: string;
     data_a: string;
-
     data_chiusura_da: string;
     data_chiusura_a: string;
 }
@@ -146,6 +137,9 @@ export function ApplicationFilters({
     selections,
     filterOptions,
 }: ApplicationFiltersProps) {
+    // Leggo il ruolo direttamente — nessun prop threading necessario
+    const { isConsulente } = useUserRole();
+
     const [expandedSections, setExpandedSections] = useState({
         base: true,
         candidato: false,
@@ -180,38 +174,22 @@ export function ApplicationFilters({
     }, [selections]);
 
     const regioniOptions = useMemo(
-        () =>
-            filterOptions.regioni.map((r) => ({
-                value: r,
-                label: r,
-            })),
+        () => filterOptions.regioni.map((r) => ({ value: r, label: r })),
         [filterOptions.regioni]
     );
 
     const provinceOptions = useMemo(
-        () =>
-            (filterOptions.province || []).map((p) => ({
-                value: p,
-                label: p,
-            })),
+        () => (filterOptions.province || []).map((p) => ({ value: p, label: p })),
         [filterOptions.province]
     );
 
     const cittaOptions = useMemo(
-        () =>
-            filterOptions.citta.map((c) => ({
-                value: c,
-                label: c,
-            })),
+        () => filterOptions.citta.map((c) => ({ value: c, label: c })),
         [filterOptions.citta]
     );
 
     const titoliOptions = useMemo(
-        () =>
-            filterOptions.titoli_studio.map((t) => ({
-                value: t,
-                label: t,
-            })),
+        () => filterOptions.titoli_studio.map((t) => ({ value: t, label: t })),
         [filterOptions.titoli_studio]
     );
 
@@ -219,7 +197,8 @@ export function ApplicationFilters({
         let count = 0;
         if (filters.stato !== "all") count++;
         if (filters.selezione_id !== "all") count++;
-        if (filters.company_id !== "all") count++;
+        // company_id non viene conteggiato per il consulente (filtro non disponibile)
+        if (!isConsulente && filters.company_id !== "all") count++;
         if (filters.is_shortlisted !== "all") count++;
         if (filters.sesso !== "all") count++;
         if (filters.regione !== "all") count++;
@@ -243,7 +222,6 @@ export function ApplicationFilters({
         if (filters.has_colloqui !== "all") count++;
         if (filters.tipo_colloquio !== "all") count++;
         if (filters.esito_colloquio !== "all") count++;
-
         if (filters.has_colloqui_positivi !== "all") count++;
         if (filters.has_test !== "all") count++;
         if (filters.test_status !== "all") count++;
@@ -261,7 +239,7 @@ export function ApplicationFilters({
         if (filters.data_chiusura_da) count++;
         if (filters.data_chiusura_a) count++;
         return count;
-    }, [filters]);
+    }, [filters, isConsulente]);
 
     const toggleSection = (section: keyof typeof expandedSections) => {
         setExpandedSections((prev) => ({
@@ -286,6 +264,7 @@ export function ApplicationFilters({
 
                 <div className="space-y-5 p-5 pt-0">
 
+                    {/* ── FILTRI BASE ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("base")}
@@ -293,8 +272,7 @@ export function ApplicationFilters({
                         >
                             <span className="font-semibold text-bigster-text">Filtri Base</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.base ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.base ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.base && (
@@ -308,23 +286,53 @@ export function ApplicationFilters({
                                     emptyLabel="Tutti gli stati"
                                 />
 
-                                <SearchableSelect
-                                    label="Selezione"
-                                    value={filters.selezione_id === "all" ? "" : filters.selezione_id}
-                                    onChange={(value) => updateFilter("selezione_id", value)}
-                                    options={selectionOptions}
-                                    placeholder="Cerca selezione..."
-                                    emptyLabel="Tutte le selezioni"
-                                />
+                                {/* Selezione — visibile a tutti. Per il consulente le opzioni
+                                    sono già limitate alle sue selezioni dal backend. */}
+                                <div>
+                                    <SearchableSelect
+                                        label="Selezione"
+                                        value={filters.selezione_id === "all" ? "" : filters.selezione_id}
+                                        onChange={(value) => updateFilter("selezione_id", value)}
+                                        options={selectionOptions}
+                                        placeholder="Cerca selezione..."
+                                        emptyLabel="Tutte le selezioni"
+                                    />
+                                    {isConsulente && (
+                                        <p className="text-[11px] text-bigster-text-muted mt-1 flex items-center gap-1">
+                                            <Lock className="h-3 w-3 flex-shrink-0" />
+                                            Vengono mostrate solo le selezioni associate alle tue aziende.
+                                        </p>
+                                    )}
+                                </div>
 
-                                <SearchableSelect
-                                    label="Azienda"
-                                    value={filters.company_id === "all" ? "" : filters.company_id}
-                                    onChange={(value) => updateFilter("company_id", value)}
-                                    options={companyOptions}
-                                    placeholder="Cerca azienda..."
-                                    emptyLabel="Tutte le aziende"
-                                />
+                                {/* Azienda — nascosto per il consulente:
+                                    lo scope è già forzato a livello di API. */}
+                                {!isConsulente && (
+                                    <SearchableSelect
+                                        label="Azienda"
+                                        value={filters.company_id === "all" ? "" : filters.company_id}
+                                        onChange={(value) => updateFilter("company_id", value)}
+                                        options={companyOptions}
+                                        placeholder="Cerca azienda..."
+                                        emptyLabel="Tutte le aziende"
+                                    />
+                                )}
+
+                                {/* Info box per il consulente: spiega che il filtro azienda è già applicato */}
+                                {isConsulente && (
+                                    <div className="flex items-start gap-2.5 p-3 bg-bigster-card-bg border border-bigster-border">
+                                        <Lock className="h-4 w-4 text-bigster-text-muted flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs font-semibold text-bigster-text">
+                                                Filtro azienda applicato automaticamente
+                                            </p>
+                                            <p className="text-[11px] text-bigster-text-muted mt-0.5">
+                                                Stai visualizzando solo le candidature relative alle aziende
+                                                che hai venduto e stai seguendo. Questo filtro non può essere rimosso.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <StandardSelect
                                     label="Nella Rosa"
@@ -337,6 +345,7 @@ export function ApplicationFilters({
                         )}
                     </div>
 
+                    {/* ── DATI CANDIDATO ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("candidato")}
@@ -344,13 +353,11 @@ export function ApplicationFilters({
                         >
                             <span className="font-semibold text-bigster-text">Dati Candidato</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.candidato ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.candidato ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.candidato && (
                             <div className="p-4 space-y-4">
-
                                 <StandardSelect
                                     label="Sesso"
                                     value={filters.sesso === "all" ? "" : filters.sesso}
@@ -358,7 +365,6 @@ export function ApplicationFilters({
                                     options={GENDER_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
                                 <SearchableSelect
                                     label="Regione"
                                     value={filters.regione === "all" ? "" : filters.regione}
@@ -367,7 +373,6 @@ export function ApplicationFilters({
                                     placeholder="Cerca regione..."
                                     emptyLabel="Tutte le regioni"
                                 />
-
                                 <SearchableSelect
                                     label="Provincia"
                                     value={filters.provincia === "all" ? "" : filters.provincia}
@@ -376,7 +381,6 @@ export function ApplicationFilters({
                                     placeholder="Cerca provincia..."
                                     emptyLabel="Tutte le province"
                                 />
-
                                 <SearchableSelect
                                     label="Città"
                                     value={filters.citta === "all" ? "" : filters.citta}
@@ -385,7 +389,6 @@ export function ApplicationFilters({
                                     placeholder="Cerca città..."
                                     emptyLabel="Tutte le città"
                                 />
-
                                 <SearchableSelect
                                     label="Titolo di Studio"
                                     value={filters.titolo_studio === "all" ? "" : filters.titolo_studio}
@@ -394,7 +397,6 @@ export function ApplicationFilters({
                                     placeholder="Cerca titolo..."
                                     emptyLabel="Tutti i titoli"
                                 />
-
                                 <div>
                                     <label className="text-sm font-semibold text-bigster-text block mb-2">
                                         Range Età
@@ -434,6 +436,7 @@ export function ApplicationFilters({
                         )}
                     </div>
 
+                    {/* ── DOMICILIO ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("domicilio")}
@@ -441,13 +444,11 @@ export function ApplicationFilters({
                         >
                             <span className="font-semibold text-bigster-text">Domicilio</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.domicilio ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.domicilio ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.domicilio && (
                             <div className="p-4 space-y-4">
-
                                 <SearchableSelect
                                     label="Regione Domicilio"
                                     value={filters.domicilio_regione === "all" ? "" : filters.domicilio_regione}
@@ -456,7 +457,6 @@ export function ApplicationFilters({
                                     placeholder="Cerca regione..."
                                     emptyLabel="Tutte le regioni"
                                 />
-
                                 <SearchableSelect
                                     label="Provincia Domicilio"
                                     value={filters.domicilio_provincia === "all" ? "" : filters.domicilio_provincia}
@@ -465,7 +465,6 @@ export function ApplicationFilters({
                                     placeholder="Cerca provincia..."
                                     emptyLabel="Tutte le province"
                                 />
-
                                 <SearchableSelect
                                     label="Città Domicilio"
                                     value={filters.domicilio_citta === "all" ? "" : filters.domicilio_citta}
@@ -478,22 +477,19 @@ export function ApplicationFilters({
                         )}
                     </div>
 
+                    {/* ── INFORMAZIONI PROFESSIONALI ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("professionale")}
                             className="w-full flex items-center justify-between p-4 bg-bigster-card-bg hover:bg-bigster-muted-bg transition-colors"
                         >
-                            <span className="font-semibold text-bigster-text">
-                                Informazioni Professionali
-                            </span>
+                            <span className="font-semibold text-bigster-text">Informazioni Professionali</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.professionale ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.professionale ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.professionale && (
                             <div className="p-4 space-y-4">
-
                                 <StandardSelect
                                     label="Automunito"
                                     value={filters.automunito === "all" ? "" : filters.automunito}
@@ -501,19 +497,13 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
                                 <StandardSelect
                                     label="Disponibilità Trasferte"
-                                    value={
-                                        filters.disponibilita_trasferte === "all"
-                                            ? ""
-                                            : filters.disponibilita_trasferte
-                                    }
+                                    value={filters.disponibilita_trasferte === "all" ? "" : filters.disponibilita_trasferte}
                                     onChange={(value) => updateFilter("disponibilita_trasferte", value)}
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
                                 <StandardSelect
                                     label="Partita IVA"
                                     value={filters.partita_iva === "all" ? "" : filters.partita_iva}
@@ -521,7 +511,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
                                 <StandardSelect
                                     label="Attestato ASO"
                                     value={filters.attestato_aso === "all" ? "" : filters.attestato_aso}
@@ -529,19 +518,13 @@ export function ApplicationFilters({
                                     options={ATTESTATO_ASO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
                                 <StandardSelect
                                     label="Disponibilità Immediata"
-                                    value={
-                                        filters.disponibilita_immediata === "all"
-                                            ? ""
-                                            : filters.disponibilita_immediata
-                                    }
+                                    value={filters.disponibilita_immediata === "all" ? "" : filters.disponibilita_immediata}
                                     onChange={(value) => updateFilter("disponibilita_immediata", value)}
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
                                 <div>
                                     <label className="text-sm font-semibold text-bigster-text block mb-2">
                                         Preavviso (settimane)
@@ -581,22 +564,19 @@ export function ApplicationFilters({
                         )}
                     </div>
 
+                    {/* ── DOCUMENTI ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("documenti")}
                             className="w-full flex items-center justify-between p-4 bg-bigster-card-bg hover:bg-bigster-muted-bg transition-colors"
                         >
-                            <span className="font-semibold text-bigster-text">
-                                Documenti
-                            </span>
+                            <span className="font-semibold text-bigster-text">Documenti</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.documenti ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.documenti ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.documenti && (
                             <div className="p-4 space-y-4">
-
                                 <StandardSelect
                                     label="CV Caricato"
                                     value={filters.has_cv === "all" ? "" : filters.has_cv}
@@ -604,7 +584,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
                                 <StandardSelect
                                     label="Ha Note"
                                     value={filters.has_note === "all" ? "" : filters.has_note}
@@ -612,7 +591,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-bigster-text">
                                         Visualizzata dall'HR
@@ -630,7 +608,7 @@ export function ApplicationFilters({
                         )}
                     </div>
 
-                    
+                    {/* ── COLLOQUI ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("colloqui")}
@@ -638,13 +616,11 @@ export function ApplicationFilters({
                         >
                             <span className="font-semibold text-bigster-text">Colloqui</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.colloqui ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.colloqui ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.colloqui && (
                             <div className="p-4 space-y-4">
-                                
                                 <StandardSelect
                                     label="Colloqui Effettuati"
                                     value={filters.has_colloqui === "all" ? "" : filters.has_colloqui}
@@ -652,8 +628,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Tipo Colloquio"
                                     value={filters.tipo_colloquio === "all" ? "" : filters.tipo_colloquio}
@@ -661,8 +635,6 @@ export function ApplicationFilters({
                                     options={INTERVIEW_TYPE_OPTIONS}
                                     emptyLabel="Tutti i tipi"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Esito Colloquio"
                                     value={filters.esito_colloquio === "all" ? "" : filters.esito_colloquio}
@@ -670,8 +642,6 @@ export function ApplicationFilters({
                                     options={INTERVIEW_OUTCOME_OPTIONS}
                                     emptyLabel="Tutti gli esiti"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Colloqui Positivi"
                                     value={filters.has_colloqui_positivi === "all" ? "" : filters.has_colloqui_positivi}
@@ -683,7 +653,7 @@ export function ApplicationFilters({
                         )}
                     </div>
 
-                    
+                    {/* ── TEST BIGSTER ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("test")}
@@ -691,13 +661,11 @@ export function ApplicationFilters({
                         >
                             <span className="font-semibold text-bigster-text">Test BigsTer</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.test ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.test ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.test && (
                             <div className="p-4 space-y-4">
-                                
                                 <StandardSelect
                                     label="Test Inviato"
                                     value={filters.has_test === "all" ? "" : filters.has_test}
@@ -705,8 +673,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Stato Test"
                                     value={filters.test_status === "all" ? "" : filters.test_status}
@@ -714,8 +680,6 @@ export function ApplicationFilters({
                                     options={TEST_STATUS_OPTIONS}
                                     emptyLabel="Tutti gli stati"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Test Completato"
                                     value={filters.test_completed === "all" ? "" : filters.test_completed}
@@ -723,8 +687,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Esito Idoneità"
                                     value={filters.test_eligible === "all" ? "" : filters.test_eligible}
@@ -732,8 +694,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Test Sospetto"
                                     value={filters.test_suspect === "all" ? "" : filters.test_suspect}
@@ -741,8 +701,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Test Inaffidabile"
                                     value={filters.test_unreliable === "all" ? "" : filters.test_unreliable}
@@ -750,8 +708,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Test Preferito"
                                     value={filters.test_preferred === "all" ? "" : filters.test_preferred}
@@ -759,8 +715,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Test Letto"
                                     value={filters.test_read === "all" ? "" : filters.test_read}
@@ -768,8 +722,6 @@ export function ApplicationFilters({
                                     options={YES_NO_OPTIONS}
                                     emptyLabel="Tutti"
                                 />
-
-                                
                                 <StandardSelect
                                     label="Valutazione Test"
                                     value={filters.test_evaluation === "all" ? "" : filters.test_evaluation}
@@ -777,8 +729,6 @@ export function ApplicationFilters({
                                     options={TEST_EVALUATION_OPTIONS}
                                     emptyLabel="Tutte le valutazioni"
                                 />
-
-                                
                                 <div>
                                     <label className="text-sm font-semibold text-bigster-text block mb-2">
                                         ID Profilo Test
@@ -801,7 +751,7 @@ export function ApplicationFilters({
                         )}
                     </div>
 
-                    
+                    {/* ── PIATTAFORMA ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("piattaforma")}
@@ -809,8 +759,7 @@ export function ApplicationFilters({
                         >
                             <span className="font-semibold text-bigster-text">Piattaforma</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.piattaforma ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.piattaforma ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.piattaforma && (
@@ -836,7 +785,7 @@ export function ApplicationFilters({
                         )}
                     </div>
 
-                    
+                    {/* ── FILTRI PER DATA ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("date")}
@@ -844,8 +793,7 @@ export function ApplicationFilters({
                         >
                             <span className="font-semibold text-bigster-text">Filtri per Data</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.date ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.date ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.date && (
@@ -863,7 +811,6 @@ export function ApplicationFilters({
                                         className={inputBase}
                                     />
                                 </div>
-
                                 <div>
                                     <label className="text-sm font-semibold text-bigster-text block mb-2">
                                         Data Candidatura - A
@@ -877,7 +824,6 @@ export function ApplicationFilters({
                                         className={inputBase}
                                     />
                                 </div>
-
                                 <div>
                                     <label className="text-sm font-semibold text-bigster-text block mb-2">
                                         Data Chiusura - Da
@@ -891,7 +837,6 @@ export function ApplicationFilters({
                                         className={inputBase}
                                     />
                                 </div>
-
                                 <div>
                                     <label className="text-sm font-semibold text-bigster-text block mb-2">
                                         Data Chiusura - A
@@ -910,7 +855,6 @@ export function ApplicationFilters({
                     </div>
                 </div>
 
-                
                 {activeFiltersCount > 0 && (
                     <div className="p-5 pt-0">
                         <Button
@@ -935,7 +879,7 @@ export function ApplicationFilters({
 
 export default ApplicationFilters;
 
-// EXPORT: Stato iniziale filtri per uso esterno
+// Stato iniziale filtri — esportato per uso esterno (ApplicationList, ApplicationsToolbar)
 export const INITIAL_FILTER_STATE: FilterState = {
     stato: "all",
     selezione_id: "all",
@@ -960,7 +904,7 @@ export const INITIAL_FILTER_STATE: FilterState = {
     preavviso_max: "",
     has_cv: "all",
     has_note: "all",
-    is_read: "all",  
+    is_read: "all",
     has_colloqui: "all",
     tipo_colloquio: "all",
     esito_colloquio: "all",

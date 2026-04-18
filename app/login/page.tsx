@@ -66,12 +66,14 @@ export default function LoginPage() {
       setTimeout(() => {
         if (userRole === UserRole.AMMINISTRAZIONE) {
           router.push("/amministrazione");
+        } else if (userRole === UserRole.CONSULENTE) {
+          // Il consulente non ha accesso alle selezioni: atterraggio su candidature
+          router.push("/candidature");
         } else {
           router.push("/selezioni");
         }
       }, 500);
     } catch (err: any) {
-
       if (err?.status === 401) {
         notify.error(
           "Accesso negato",
@@ -106,6 +108,7 @@ export default function LoginPage() {
     }
   };
 
+  // Utenti disponibili nel selettore rapido per sviluppo/demo
   const availableUsers: User[] = [
     {
       email: "max@dentalead.ch",
@@ -135,7 +138,30 @@ export default function LoginPage() {
       role: "Amministrazione",
       roleBadgeColor: "bg-green-500/20 text-green-600 border-green-500/30",
     },
+    // Consulenti statici (seedati sempre in ogni ambiente)
+    {
+      email: "marco.rossi@dentalead.ch",
+      password: "consulente2024!",
+      name: "Marco Rossi",
+      role: "Consulente",
+      roleBadgeColor: "bg-orange-500/20 text-orange-600 border-orange-500/30",
+    },
+    {
+      email: "elena.bianchi@dentalead.ch",
+      password: "consulente2024!",
+      name: "Elena Bianchi",
+      role: "Consulente",
+      roleBadgeColor: "bg-orange-500/20 text-orange-600 border-orange-500/30",
+    },
+    {
+      email: "luca.ferrari@dentalead.ch",
+      password: "consulente2024!",
+      name: "Luca Ferrari",
+      role: "Consulente",
+      roleBadgeColor: "bg-orange-500/20 text-orange-600 border-orange-500/30",
+    },
   ];
+
   const fillCredentials = (user: User) => {
     setValue("email", user.email);
     setValue("password", user.password);
@@ -239,7 +265,7 @@ export default function LoginPage() {
         onClose={() => setShowUserSelector(false)}
         title="Seleziona un utente"
       >
-        <div className="space-y-2 max-h-[60vh]">
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {availableUsers.map((user, index) => (
             <div
               key={index}

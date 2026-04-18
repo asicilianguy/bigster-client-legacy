@@ -27,6 +27,7 @@ import {
     useRemoveFromShortlistMutation,
 } from "@/lib/redux/features/selections/selectionsApiSlice";
 import { ReadStatusBadge } from "./UnreadBanner";
+import { useUserRole } from "@/hooks/use-user-role";
 
 interface ActionsCardProps {
     test: BigsterTestDetail;
@@ -34,6 +35,7 @@ interface ActionsCardProps {
 
 export function ActionsCard({ test }: ActionsCardProps) {
     const router = useRouter();
+    const { isConsulente } = useUserRole();
 
     const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
 
@@ -170,18 +172,20 @@ export function ActionsCard({ test }: ActionsCardProps) {
                                                 Nella Rosa
                                             </span>
                                         </div>
-                                        <Button
-                                            onClick={() => setIsRemoveDialogOpen(true)}
-                                            variant="outline"
-                                            size="sm"
-                                            className="rounded-none border border-red-300 text-red-600 hover:bg-red-50 text-xs"
-                                        >
-                                            <StarOff className="h-3 w-3 mr-1" />
-                                            Rimuovi
-                                        </Button>
+                                        {!isConsulente && (
+                                            <Button
+                                                onClick={() => setIsRemoveDialogOpen(true)}
+                                                variant="outline"
+                                                size="sm"
+                                                className="rounded-none border border-red-300 text-red-600 hover:bg-red-50 text-xs"
+                                            >
+                                                <StarOff className="h-3 w-3 mr-1" />
+                                                Rimuovi
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
-                            ) : (
+                            ) : !isConsulente ? (
                                 <Button
                                     onClick={handleAddToRosa}
                                     disabled={isAddingToRosa}
@@ -194,7 +198,7 @@ export function ActionsCard({ test }: ActionsCardProps) {
                                     )}
                                     Aggiungi alla Rosa
                                 </Button>
-                            )}
+                            ) : null}
                         </>
                     )}
 
@@ -250,14 +254,16 @@ export function ActionsCard({ test }: ActionsCardProps) {
                             Vai alla Candidatura
                         </Button>
 
-                        <Button
-                            variant="outline"
-                            className="w-full rounded-none border border-bigster-border hover:bg-bigster-muted-bg"
-                            onClick={() => router.push(`/selezioni/${test.selection.id}`)}
-                        >
-                            <Users className="h-4 w-4 mr-2" />
-                            Vai alla Selezione
-                        </Button>
+                        {!isConsulente && (
+                            <Button
+                                variant="outline"
+                                className="w-full rounded-none border border-bigster-border hover:bg-bigster-muted-bg"
+                                onClick={() => router.push(`/selezioni/${test.selection.id}`)}
+                            >
+                                <Users className="h-4 w-4 mr-2" />
+                                Vai alla Selezione
+                            </Button>
+                        )}
                     </div>
                 </div>
             </motion.div>

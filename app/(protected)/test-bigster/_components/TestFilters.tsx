@@ -8,6 +8,7 @@ import {
     ChevronDown,
     Shield,
     AlertTriangle,
+    Lock,
 } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { StandardSelect } from "@/components/ui/StandardSelect";
@@ -15,9 +16,9 @@ import { BigsterTestStatus, BigsterTestFilterOptionsResponse } from "@/types/big
 import { VALIDITY_THRESHOLDS } from "@/types/bigster";
 import { AttestatoAsoStatus } from "@/types/application";
 import { SelectionListItem } from "@/types/selection";
+import { useUserRole } from "@/hooks/use-user-role";
 
 export interface TestFiltersState {
-
     status: string;
     completed: string;
     eligible: string;
@@ -213,6 +214,9 @@ export function TestFilters({
     profiles,
     filterOptions,
 }: TestFiltersProps) {
+    // Leggo il ruolo direttamente — nessun prop threading necessario
+    const { isConsulente } = useUserRole();
+
     const [expandedSections, setExpandedSections] = useState({
         status: true,
         relations: false,
@@ -253,38 +257,22 @@ export function TestFilters({
     );
 
     const regioniOptions = useMemo(
-        () =>
-            (filterOptions?.regioni || []).map((r) => ({
-                value: r,
-                label: r,
-            })),
+        () => (filterOptions?.regioni || []).map((r) => ({ value: r, label: r })),
         [filterOptions?.regioni]
     );
 
     const provinceOptions = useMemo(
-        () =>
-            (filterOptions?.province || []).map((p) => ({
-                value: p,
-                label: p,
-            })),
+        () => (filterOptions?.province || []).map((p) => ({ value: p, label: p })),
         [filterOptions?.province]
     );
 
     const cittaOptions = useMemo(
-        () =>
-            (filterOptions?.citta || []).map((c) => ({
-                value: c,
-                label: c,
-            })),
+        () => (filterOptions?.citta || []).map((c) => ({ value: c, label: c })),
         [filterOptions?.citta]
     );
 
     const domicilioRegioniOptions = useMemo(
-        () =>
-            (filterOptions?.domicilio_regioni || []).map((r) => ({
-                value: r,
-                label: r,
-            })),
+        () => (filterOptions?.domicilio_regioni || []).map((r) => ({ value: r, label: r })),
         [filterOptions?.domicilio_regioni]
     );
 
@@ -298,7 +286,8 @@ export function TestFilters({
         if (filters.read !== "all") count++;
         if (filters.is_shortlisted !== "all") count++;
         if (filters.selection_id !== "all") count++;
-        if (filters.company_id !== "all") count++;
+        // company_id non viene conteggiato per il consulente (filtro non disponibile)
+        if (!isConsulente && filters.company_id !== "all") count++;
         if (filters.profile_id !== "all") count++;
         if (filters.candidate_sex !== "all") count++;
         if (filters.candidate_regione !== "all") count++;
@@ -329,7 +318,7 @@ export function TestFilters({
         if (filters.completed_from) count++;
         if (filters.completed_to) count++;
         return count;
-    }, [filters]);
+    }, [filters, isConsulente]);
 
     const toggleSection = (section: keyof typeof expandedSections) => {
         setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -350,20 +339,12 @@ export function TestFilters({
 
     const applyPresetHighDefensiveness = useCallback(() => {
         const isActive = filters.high_defensiveness === "yes";
-        if (isActive) {
-            onFiltersChange({ ...filters, high_defensiveness: "all" });
-        } else {
-            onFiltersChange({ ...filters, high_defensiveness: "yes" });
-        }
+        onFiltersChange({ ...filters, high_defensiveness: isActive ? "all" : "yes" });
     }, [filters, onFiltersChange]);
 
     const applyPresetThreeLies = useCallback(() => {
         const isActive = filters.three_lies_critical === "yes";
-        if (isActive) {
-            onFiltersChange({ ...filters, three_lies_critical: "all" });
-        } else {
-            onFiltersChange({ ...filters, three_lies_critical: "yes" });
-        }
+        onFiltersChange({ ...filters, three_lies_critical: isActive ? "all" : "yes" });
     }, [filters, onFiltersChange]);
 
     return (
@@ -373,17 +354,15 @@ export function TestFilters({
 
                 <div className="space-y-4 p-5 pt-0">
 
+                    {/* ── STATO E ESITO ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("status")}
                             className="w-full flex items-center justify-between p-4 bg-bigster-card-bg hover:bg-bigster-muted-bg transition-colors"
                         >
-                            <span className="font-semibold text-bigster-text">
-                                Stato e Esito
-                            </span>
+                            <span className="font-semibold text-bigster-text">Stato e Esito</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.status ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.status ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.status && (
@@ -447,6 +426,7 @@ export function TestFilters({
                         )}
                     </div>
 
+                    {/* ── SCALE DI VALIDITÀ ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("validity")}
@@ -454,18 +434,14 @@ export function TestFilters({
                         >
                             <div className="flex items-center gap-2">
                                 <Shield className="h-4 w-4 text-bigster-text" />
-                                <span className="font-semibold text-bigster-text">
-                                    Scale di Validità
-                                </span>
+                                <span className="font-semibold text-bigster-text">Scale di Validità</span>
                             </div>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.validity ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.validity ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.validity && (
                             <div className="p-4 space-y-5">
-
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-bigster-text-muted uppercase tracking-wide">
                                         Preset Rapidi
@@ -473,10 +449,11 @@ export function TestFilters({
                                     <div className="space-y-2">
                                         <button
                                             onClick={applyPresetHighDefensiveness}
-                                            className={`w-full flex items-center gap-3 p-3 border text-left transition-all ${filters.high_defensiveness === "yes"
+                                            className={`w-full flex items-center gap-3 p-3 border text-left transition-all ${
+                                                filters.high_defensiveness === "yes"
                                                     ? "bg-bigster-primary text-bigster-primary-text border-2 border-yellow-200"
                                                     : "bg-bigster-surface text-bigster-text border-bigster-border hover:bg-bigster-muted-bg"
-                                                }`}
+                                            }`}
                                         >
                                             <Shield className="h-4 w-4 flex-shrink-0" />
                                             <div>
@@ -488,13 +465,13 @@ export function TestFilters({
                                                 </p>
                                             </div>
                                         </button>
-
                                         <button
                                             onClick={applyPresetThreeLies}
-                                            className={`w-full flex items-center gap-3 p-3 border text-left transition-all ${filters.three_lies_critical === "yes"
+                                            className={`w-full flex items-center gap-3 p-3 border text-left transition-all ${
+                                                filters.three_lies_critical === "yes"
                                                     ? "bg-bigster-primary text-bigster-primary-text border-2 border-yellow-200"
                                                     : "bg-bigster-surface text-bigster-text border-bigster-border hover:bg-bigster-muted-bg"
-                                                }`}
+                                            }`}
                                         >
                                             <AlertTriangle className="h-4 w-4 flex-shrink-0" />
                                             <div>
@@ -565,37 +542,70 @@ export function TestFilters({
                         )}
                     </div>
 
+                    {/* ── SELEZIONE E PROFILO (+ AZIENDA per non-consulente) ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("relations")}
                             className="w-full flex items-center justify-between p-4 bg-bigster-card-bg hover:bg-bigster-muted-bg transition-colors"
                         >
                             <span className="font-semibold text-bigster-text">
-                                Azienda, Selezione e Profilo
+                                {isConsulente
+                                    ? "Selezione e Profilo"
+                                    : "Azienda, Selezione e Profilo"}
                             </span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.relations ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.relations ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.relations && (
                             <div className="p-4 space-y-4">
-                                <SearchableSelect
-                                    label="Azienda"
-                                    value={filters.company_id === "all" ? "" : filters.company_id}
-                                    onChange={(value) => updateFilter("company_id", value)}
-                                    options={companyOptions}
-                                    placeholder="Cerca azienda..."
-                                    emptyLabel="Tutte le aziende"
-                                />
-                                <SearchableSelect
-                                    label="Selezione"
-                                    value={filters.selection_id === "all" ? "" : filters.selection_id}
-                                    onChange={(value) => updateFilter("selection_id", value)}
-                                    options={selectionOptions}
-                                    placeholder="Cerca selezione..."
-                                    emptyLabel="Tutte le selezioni"
-                                />
+
+                                {/* Azienda — nascosta per il consulente */}
+                                {!isConsulente && (
+                                    <SearchableSelect
+                                        label="Azienda"
+                                        value={filters.company_id === "all" ? "" : filters.company_id}
+                                        onChange={(value) => updateFilter("company_id", value)}
+                                        options={companyOptions}
+                                        placeholder="Cerca azienda..."
+                                        emptyLabel="Tutte le aziende"
+                                    />
+                                )}
+
+                                {/* Info box per il consulente */}
+                                {isConsulente && (
+                                    <div className="flex items-start gap-2.5 p-3 bg-bigster-card-bg border border-bigster-border">
+                                        <Lock className="h-4 w-4 text-bigster-text-muted flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs font-semibold text-bigster-text">
+                                                Filtro azienda applicato automaticamente
+                                            </p>
+                                            <p className="text-[11px] text-bigster-text-muted mt-0.5">
+                                                Stai visualizzando solo i test relativi alle aziende
+                                                che hai venduto e stai seguendo. Questo filtro non può essere rimosso.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Selezione — visibile a tutti, per il consulente già filtrata dal backend */}
+                                <div>
+                                    <SearchableSelect
+                                        label="Selezione"
+                                        value={filters.selection_id === "all" ? "" : filters.selection_id}
+                                        onChange={(value) => updateFilter("selection_id", value)}
+                                        options={selectionOptions}
+                                        placeholder="Cerca selezione..."
+                                        emptyLabel="Tutte le selezioni"
+                                    />
+                                    {isConsulente && (
+                                        <p className="text-[11px] text-bigster-text-muted mt-1 flex items-center gap-1">
+                                            <Lock className="h-3 w-3 flex-shrink-0" />
+                                            Vengono mostrate solo le selezioni associate alle tue aziende.
+                                        </p>
+                                    )}
+                                </div>
+
                                 <StandardSelect
                                     label="Profilo BigsTer"
                                     value={filters.profile_id === "all" ? "" : filters.profile_id}
@@ -607,17 +617,15 @@ export function TestFilters({
                         )}
                     </div>
 
+                    {/* ── DATI CANDIDATO ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("candidate")}
                             className="w-full flex items-center justify-between p-4 bg-bigster-card-bg hover:bg-bigster-muted-bg transition-colors"
                         >
-                            <span className="font-semibold text-bigster-text">
-                                Dati Candidato
-                            </span>
+                            <span className="font-semibold text-bigster-text">Dati Candidato</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.candidate ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.candidate ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.candidate && (
@@ -633,22 +641,19 @@ export function TestFilters({
                         )}
                     </div>
 
+                    {/* ── RESIDENZA E DOMICILIO ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("geography")}
                             className="w-full flex items-center justify-between p-4 bg-bigster-card-bg hover:bg-bigster-muted-bg transition-colors"
                         >
-                            <span className="font-semibold text-bigster-text">
-                                Residenza e Domicilio
-                            </span>
+                            <span className="font-semibold text-bigster-text">Residenza e Domicilio</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.geography ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.geography ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.geography && (
                             <div className="p-4 space-y-5">
-
                                 <div className="space-y-3">
                                     <label className="text-xs font-semibold text-bigster-text-muted uppercase tracking-wide">
                                         Residenza
@@ -678,9 +683,7 @@ export function TestFilters({
                                         emptyLabel="Tutte le città"
                                     />
                                 </div>
-
                                 <div className="border-t border-bigster-border" />
-
                                 <div className="space-y-3">
                                     <label className="text-xs font-semibold text-bigster-text-muted uppercase tracking-wide">
                                         Domicilio
@@ -714,17 +717,15 @@ export function TestFilters({
                         )}
                     </div>
 
+                    {/* ── INFORMAZIONI PROFESSIONALI ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("professionale")}
                             className="w-full flex items-center justify-between p-4 bg-bigster-card-bg hover:bg-bigster-muted-bg transition-colors"
                         >
-                            <span className="font-semibold text-bigster-text">
-                                Informazioni Professionali
-                            </span>
+                            <span className="font-semibold text-bigster-text">Informazioni Professionali</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.professionale ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.professionale ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.professionale && (
@@ -739,11 +740,7 @@ export function TestFilters({
                                     />
                                     <StandardSelect
                                         label="Disponibilità Trasferte"
-                                        value={
-                                            filters.disponibilita_trasferte === "all"
-                                                ? ""
-                                                : filters.disponibilita_trasferte
-                                        }
+                                        value={filters.disponibilita_trasferte === "all" ? "" : filters.disponibilita_trasferte}
                                         onChange={(value) => updateFilter("disponibilita_trasferte", value)}
                                         options={YES_NO_OPTIONS}
                                         emptyLabel="Tutti"
@@ -759,11 +756,7 @@ export function TestFilters({
                                     />
                                     <StandardSelect
                                         label="Disponibilità Immediata"
-                                        value={
-                                            filters.disponibilita_immediata === "all"
-                                                ? ""
-                                                : filters.disponibilita_immediata
-                                        }
+                                        value={filters.disponibilita_immediata === "all" ? "" : filters.disponibilita_immediata}
                                         onChange={(value) => updateFilter("disponibilita_immediata", value)}
                                         options={YES_NO_OPTIONS}
                                         emptyLabel="Tutti"
@@ -780,17 +773,15 @@ export function TestFilters({
                         )}
                     </div>
 
+                    {/* ── FILTRI PER DATA ── */}
                     <div className="border border-bigster-border">
                         <button
                             onClick={() => toggleSection("dates")}
                             className="w-full flex items-center justify-between p-4 bg-bigster-card-bg hover:bg-bigster-muted-bg transition-colors"
                         >
-                            <span className="font-semibold text-bigster-text">
-                                Filtri per Data
-                            </span>
+                            <span className="font-semibold text-bigster-text">Filtri per Data</span>
                             <ChevronDown
-                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.dates ? "rotate-180" : ""
-                                    }`}
+                                className={`h-5 w-5 text-bigster-text transition-transform ${expandedSections.dates ? "rotate-180" : ""}`}
                             />
                         </button>
                         {expandedSections.dates && (

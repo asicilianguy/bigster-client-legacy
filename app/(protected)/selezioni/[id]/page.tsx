@@ -3,6 +3,8 @@
 import { useParams, useRouter } from "next/navigation";
 import { useGetSelectionByIdQuery } from "@/lib/redux/features/selections/selectionsApiSlice";
 import { useUserRole } from "@/hooks/use-user-role";
+import RoleProtectedRoute from "@/components/shared/role-protected-route";
+import { UserRole } from "@/types/user";
 import { BigsterLoader } from "@/components/shared/BigsterLoader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
@@ -25,7 +27,16 @@ import { RosaCandidatiSection } from "./_components/rosa-candidati";
 import { TrialCandidateCard } from "./_components/TrialCandidateCard";
 import { HiredCandidateCard } from "./_components/HiredCandidateCard";
 
-export default function SelectionDetailPage() {
+// Selezioni [id] è accessibile a tutti i ruoli TRANNE il consulente
+const ALLOWED_ROLES = [
+  UserRole.CEO,
+  UserRole.RESPONSABILE_RISORSE_UMANE,
+  UserRole.RISORSA_UMANA,
+  UserRole.AMMINISTRAZIONE,
+  UserRole.DEVELOPER,
+];
+
+function SelectionDetailPageContent() {
   const params = useParams();
   const router = useRouter();
   const selectionId = parseInt(params.id as string);
@@ -147,6 +158,14 @@ export default function SelectionDetailPage() {
         <StatusHistorySection selection={selection} />
       </div>
     </motion.div>
+  );
+}
+
+export default function SelectionDetailPage() {
+  return (
+    <RoleProtectedRoute allowedRoles={ALLOWED_ROLES}>
+      <SelectionDetailPageContent />
+    </RoleProtectedRoute>
   );
 }
 

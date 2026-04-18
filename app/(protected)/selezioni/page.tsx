@@ -12,8 +12,19 @@ import { SelectionList } from "./_components/SelectionList";
 import { SelectionsDeadlinesMonitor } from "./_components/SelectionsDeadlinesMonitor";
 import { Button } from "@/components/ui/button";
 import { Briefcase, X } from "lucide-react";
+import RoleProtectedRoute from "@/components/shared/role-protected-route";
+import { UserRole } from "@/types/user";
 
-export default function SelezioniPage() {
+// Selezioni è accessibile a tutti i ruoli TRANNE il consulente
+const ALLOWED_ROLES = [
+  UserRole.CEO,
+  UserRole.RESPONSABILE_RISORSE_UMANE,
+  UserRole.RISORSA_UMANA,
+  UserRole.AMMINISTRAZIONE,
+  UserRole.DEVELOPER,
+];
+
+function SelezioniPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -149,5 +160,13 @@ export default function SelezioniPage() {
 
       <SelectionsDeadlinesMonitor />
     </div>
+  );
+}
+
+export default function SelezioniPage() {
+  return (
+    <RoleProtectedRoute allowedRoles={ALLOWED_ROLES}>
+      <SelezioniPageContent />
+    </RoleProtectedRoute>
   );
 }

@@ -9,6 +9,20 @@ export const getScoreColor = (normalizedScore: number): string => {
     return "#ef4444";
 };
 
+/**
+ * Color based on raw score (-100 to +100).
+ * Thresholds aligned with getScoreColor:
+ *   raw >= 40  → normalized >= 70 → green
+ *   raw >= -20 → normalized >= 40 → yellow
+ *   raw < -20  → normalized < 40  → red
+ */
+export const getRawScoreColor = (rawValue: number | null): string => {
+    if (rawValue === null) return "#9ca3af";
+    if (rawValue >= 40) return "#22c55e";
+    if (rawValue >= -20) return "#f59e0b";
+    return "#ef4444";
+};
+
 export const getValidityColor = (score: number | null): string => {
     if (score === null) return "#9ca3af";
     if (score >= 80) return "#ef4444";

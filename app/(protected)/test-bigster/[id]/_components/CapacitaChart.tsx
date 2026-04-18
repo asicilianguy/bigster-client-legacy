@@ -8,16 +8,45 @@ import {
     PolarAngleAxis,
     PolarRadiusAxis,
     Radar,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    ReferenceLine,
     ResponsiveContainer,
     Tooltip,
 } from "recharts";
 import { BigsterTestScores } from "@/types/bigster";
-import { CustomTooltip } from "./CustomTooltip";
 import { capacitaMapping } from "./constants";
-import { normalizeScore, getScoreColor } from "./helpers";
+import { normalizeScore } from "./helpers";
 
 interface CapacitaChartProps {
     scores: BigsterTestScores;
+}
+
+// Colore neutro fisso — nessuna codifica semantica buono/cattivo
+const CAPACITA_COLOR = "#22c55e"; // verde, coerente con il radar
+
+function CustomBarLabel(props: any) {
+    const { x, y, width, height, value } = props;
+    if (value === null || value === undefined) return null;
+    const isPositive = value >= 0;
+    const barTop = Math.min(y, y + height);
+    const barBottom = Math.max(y, y + height);
+    const labelY = isPositive ? barTop - 7 : barBottom + 15;
+    return (
+        <text
+            x={x + width / 2}
+            y={labelY}
+            textAnchor="middle"
+            fill={CAPACITA_COLOR}
+            fontSize={12}
+            fontWeight={700}
+        >
+            {value > 0 ? `+${value}` : value}
+        </text>
+    );
 }
 
 export function CapacitaChart({ scores }: CapacitaChartProps) {
@@ -28,8 +57,7 @@ export function CapacitaChart({ scores }: CapacitaChartProps) {
             value: normalizeScore(
                 scores.composite[code as keyof typeof scores.composite] ?? null
             ),
-            rawValue:
-                scores.composite[code as keyof typeof scores.composite] ?? null,
+            rawValue: scores.composite[code as keyof typeof scores.composite] ?? 0,
         }))
         : [];
 
@@ -51,52 +79,123 @@ export function CapacitaChart({ scores }: CapacitaChartProps) {
                     Competenze trasversali e soft skills
                 </p>
             </div>
-            <div className="p-6">
-                <div className="h-[350px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart
-                            data={data}
-                            margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
-                        >
-                            <PolarGrid stroke="#d8d8d8" />
-                            <PolarAngleAxis
-                                dataKey="name"
-                                tick={{ fill: "#6c4e06", fontSize: 10 }}
-                            />
-                            <PolarRadiusAxis
-                                angle={90}
-                                domain={[0, 100]}
-                                tick={{ fill: "#666666", fontSize: 10 }}
-                            />
-                            <Radar
-                                name="Capacità"
-                                dataKey="value"
-                                stroke="#22c55e"
-                                fill="#22c55e"
-                                fillOpacity={0.3}
-                                strokeWidth={2}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                        </RadarChart>
-                    </ResponsiveContainer>
+
+            <div className="p-6 space-y-8">
+
+                {/* ── Radar (full width) ── */}
+                <div>
+                    <p className="text-xs font-semibold text-bigster-text-muted uppercase tracking-wide mb-3">
+                        Profilo Radar
+                    </p>
+                    <div className="h-[380px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart
+                                data={data}
+                                margin={{ top: 20, right: 40, bottom: 20, left: 40 }}
+                            >
+                                <PolarGrid stroke="#d8d8d8" />
+                                <PolarAngleAxis
+                                    dataKey="name"
+                                    tick={{ fill: "#6c4e06", fontSize: 12 }}
+                                />
+                                <PolarRadiusAxis
+                                    angle={90}
+                                    domain={[0, 100]}
+                                    tick={{ fill: "#666666", fontSize: 10 }}
+                                />
+                                <Radar
+                                    name="Capacità"
+                                    dataKey="value"
+                                    stroke="#22c55e"
+                                    fill="#22c55e"
+                                    fillOpacity={0.3}
+                                    strokeWidth={2}
+                                />
+                                <Tooltip
+                                    content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            const item = data.find((d) => d.name === label);
+                                            return (
+                                                <div className="bg-bigster-surface border border-bigster-border p-3 shadow-lg">
+                                                    <p className="text-sm font-semibold text-bigster-text">{label}</p>
+                                                    <p className="text-base font-bold" style={{ color: "#22c55e" }}>
+                                                        Valore grezzo: {item?.rawValue ?? "—"}
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                    {data.map((item) => (
-                        <div
-                            key={item.code}
-                            className="flex items-center justify-between text-xs p-2 bg-bigster-card-bg border border-bigster-border"
-                        >
-                            <span className="text-bigster-text-muted">{item.name}</span>
-                            <span
-                                className="font-bold"
-                                style={{ color: getScoreColor(item.value) }}
+                {/* ── Istogramma verticale (full width) ── */}
+                <div>
+                    <p className="text-xs font-semibold text-bigster-text-muted uppercase tracking-wide mb-3">
+                        Valori Grezzi &nbsp;(−100 / +100)
+                    </p>
+                    <div className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={data}
+                                margin={{ top: 32, right: 24, bottom: 16, left: 24 }}
+                                barCategoryGap="30%"
                             >
-                                {item.rawValue ?? "—"}
-                            </span>
-                        </div>
-                    ))}
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    stroke="#e5e5e5"
+                                    vertical={false}
+                                />
+                                <XAxis
+                                    dataKey="name"
+                                    tick={{ fill: "#6c4e06", fontSize: 12, fontWeight: 600 }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <YAxis
+                                    domain={[-100, 100]}
+                                    tick={{ fill: "#666666", fontSize: 11 }}
+                                    tickCount={9}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                                    content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            const raw = payload[0].value as number;
+                                            return (
+                                                <div className="bg-bigster-surface border border-bigster-border p-3 shadow-lg">
+                                                    <p className="text-sm font-semibold text-bigster-text">{label}</p>
+                                                    <p
+                                                        className="text-lg font-bold"
+                                                        style={{ color: CAPACITA_COLOR }}
+                                                    >
+                                                        {raw > 0 ? `+${raw}` : raw}
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                                <ReferenceLine y={0} stroke="#6c4e06" strokeWidth={2} />
+                                <Bar
+                                    dataKey="rawValue"
+                                    radius={[3, 3, 0, 0]}
+                                    label={<CustomBarLabel />}
+                                    maxBarSize={56}
+                                    fill={CAPACITA_COLOR}
+                                    fillOpacity={0.8}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
+
             </div>
         </motion.div>
     );

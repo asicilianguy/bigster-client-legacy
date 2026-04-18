@@ -44,6 +44,7 @@ import {
     X,
 } from "lucide-react";
 import { InterviewOutcome, InterviewType } from "@/types/application";
+import { useUserRole } from "@/hooks/use-user-role";
 import { BigsterTestStatus } from "@/types/bigster";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
@@ -134,6 +135,7 @@ const getTestStatusInfo = (status: BigsterTestStatus) => {
 
 export function QuickActions({ application, onRefetch }: QuickActionsProps) {
     const router = useRouter();
+    const { isConsulente } = useUserRole();
 
     const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
     const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
@@ -437,7 +439,7 @@ export function QuickActions({ application, onRefetch }: QuickActionsProps) {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                    {canResendTest && (
+                    {canResendTest && !isConsulente && (
                         <Button
                             onClick={handleResendTest}
                             disabled={isResendingTest}
@@ -482,7 +484,7 @@ export function QuickActions({ application, onRefetch }: QuickActionsProps) {
                         </Button>
                     )}
 
-                    {canSendNewTest && hasTest && (
+                    {canSendNewTest && hasTest && !isConsulente && (
                         <Button
                             onClick={handleOpenTestDialog}
                             disabled={!isInCorso}
@@ -539,6 +541,9 @@ export function QuickActions({ application, onRefetch }: QuickActionsProps) {
         return null;
     };
 
+    // Il consulente vede i dati ma non può compiere azioni (sola lettura)
+    if (isConsulente) return null;
+
     return (
         <>
             <div className="bg-bigster-surface border border-bigster-border">
@@ -550,7 +555,7 @@ export function QuickActions({ application, onRefetch }: QuickActionsProps) {
                     {renderRosaStatus()}
                     {renderTestStatusCard()}
 
-                    {selectionId && !isInRosa && !isLoadingRosa && (
+                    {selectionId && !isInRosa && !isLoadingRosa && !isConsulente && (
                         <Button
                             onClick={handleAddToRosa}
                             disabled={isAddingToRosa || !isInCorso}
@@ -565,7 +570,7 @@ export function QuickActions({ application, onRefetch }: QuickActionsProps) {
                         </Button>
                     )}
 
-                    {canSendNewTest && !hasTest && (
+                    {canSendNewTest && !hasTest && !isConsulente && (
                         <Button
                             onClick={handleOpenTestDialog}
                             disabled={!isInCorso}
